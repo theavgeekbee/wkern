@@ -3,8 +3,8 @@
 .type _start, @function
 
 _start:
-    # csrw mstatus, zero
-    # csrw mie, zero
+    csrw mstatus, zero
+    csrw mie, zero
     
     la sp, __stack_top
     
