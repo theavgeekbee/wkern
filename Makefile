@@ -109,7 +109,7 @@ $(KERNEL_ELF): $(KERNEL_OBJS) linker.ld | $(BIN_DIR)
 
 $(KERNEL_BIN): $(KERNEL_ELF) | $(BIN_DIR)
 	@echo " OBJCOPY $@"
-	$(OBJCOPY) $(OBJCOPY_FLAG) $(KERNEL_ELF) $(KERNEL_BIN)
+	$(OBJCOPY) $(KERNEL_OBJCOPY_FLAG) $(KERNEL_ELF) $(KERNEL_BIN)
 
 $(OBJ_DIR)/%.o: %.c# | $(OBJ_DIR)/%
 	@mkdir -p $(dir $@)
