@@ -1,5 +1,6 @@
 #include <types.h>
-#include <wdt.h>
+#include <dtb.h>
+#include <bump.h>
 #define UART_BASE 0x10000000  // Example UART address
 
 static inline void putchar(char c) {
@@ -13,19 +14,17 @@ static void print_string(const char *str) {
     }
 }
 
-void kernel_main(void *wdt) {
-    struct wdt_root *root = wdt;
-    print_string("deserialized all!\n");
-    uint32_t count = root->count;
-    for (uint32_t i = 0; i < count; i++) {
-        print_string("deserializing wdt node!\n");
-        print_string("device type: ");
-        if (root->devices[i].type == 0) {
-            print_string("mem");
-        } else {
-            print_string("unknown");
-        }
-        print_string("\n");
+void kernel_main(size_t hart, void *fdt) {
+    (void)hart;
+
+    struct dt_node *head = dt_parse(fdt);
+    struct mem_info *info = km_find_memory(head);
+
+    if (info) {
+        print_string("found memory!\n");
+    } else {
+        print_string("could not find memory!\n");
     }
+
     while(1);
 }

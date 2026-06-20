@@ -1,8 +1,6 @@
 #pragma once
 #include <types.h>
 
-#define EHEAP_SIZE (512 * 1024)
-
 typedef enum {
     PAGE_FREE,
     PAGE_ALLOCATED
@@ -12,6 +10,11 @@ struct page {
     void* locator;
     MemoryPageAvailability availability;
     struct page* next;
+};
+
+struct mem_info {
+    void* start;
+    size_t size;
 };
 
 void* kmalloc(size_t size);
