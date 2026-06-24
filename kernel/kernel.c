@@ -20,11 +20,12 @@ void kernel_main(size_t hart, void *fdt) {
     struct dt_node *head = dt_parse(fdt);
     struct mem_info *info = km_find_memory(head);
 
-    if (info) {
-        print_string("found memory!\n");
-    } else {
-        print_string("could not find memory!\n");
+    if (!info) {
+        print_string("failed to get memory!\n");
+        while (1);
     }
+
+    km_init(info);
 
     while(1);
 }
