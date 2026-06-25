@@ -21,48 +21,64 @@ static void merge_freelist() {
 void* kmalloc(size_t size) {
     struct page *page = free_list;
     struct page *last = NULL;
-    while (page && page->size < size) {
-        last = page;
-        page = page->next;
-    }
-    if (page == NULL)
-        return NULL;
 
     size_t combined_size = size + sizeof(struct page);
 
-    if (page->size == combined_size) {
+    while (page && page->size < combined_size) {
+        last = page;
+        page = page->next;
+    }
+
+    if (page == NULL)
+        return NULL;
+
+
+    if (page->size - combined_size < sizeof(struct page)) {
+        // Return the entire page
         if (last)
-            last = page->next;
+            last->next = page->next;
         else
             free_list = page->next;
-    } else if (page->size - combined_size < sizeof(struct page)) {
-        if (page->next) {
-            struct page *curr = (void *)page + combined_size;
 
-            size_t curr_size = page->size + page->next->size - combined_size;
-            struct page *next_page = page->next->next;
+    } else {
+        // break page and create a new one
+        struct page *broken = (void *)page + combined_size;
+        broken->size = page->size - combined_size;
+        broken->next = page->next;
+        broken->status = MEMPAGE_FREE;
 
-            curr->next = next_page;
-            curr->size = curr_size;
-            curr->status = MEMPAGE_FREE;
-        }
-        // If page->next is undefined then there's nothing we can do except leak the last few bytes of memory.
+        page->size = combined_size;
+        page->next = broken;
+
+        if (last)
+            last->next = broken;
+        else
+            free_list = broken;
     } 
 
     page->status = MEMPAGE_USED;
-    page->size = combined_size;
-    page->next = NULL;
 
     return (void *)page + sizeof(struct page);
 }
 
 void kfree(void *ptr) {
+    if (!ptr)
+        return;
+
     struct page *page_info = (struct page *)(ptr - sizeof(struct page));
     struct page *iter = free_list;
 
+    page_info->status = MEMPAGE_FREE;
+
     if (!iter) {
         free_list = page_info;
-        return;
+        page_info->next = NULL;
+        goto merge;
+    }
+    if (page_info < free_list) {
+        page_info->next = iter;
+        free_list = page_info;
+        goto merge;
     }
 
     while (iter->next && iter->next < page_info) {
@@ -72,6 +88,7 @@ void kfree(void *ptr) {
     page_info->next = iter->next;
     iter->next = page_info;
 
+    merge:
     merge_freelist();
 }
 
