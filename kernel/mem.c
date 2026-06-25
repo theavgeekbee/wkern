@@ -61,6 +61,19 @@ void* kmalloc(size_t size) {
     return (void *)page + sizeof(struct page);
 }
 
+void* kzalloc(size_t size) {
+    char *ptr = kmalloc(size);
+
+    if (!ptr)
+        return NULL;
+
+    for (size_t i = 0; i < size; i++) {
+        *(ptr + i) = 0;
+    }
+
+    return ptr;
+}
+
 void kfree(void *ptr) {
     if (!ptr)
         return;
