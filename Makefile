@@ -3,9 +3,10 @@ LD = ld.lld
 OBJCOPY = llvm-objcopy
 
 ARCH_FLAG = \
-   --target=riscv32-unknown-elf \
-   -march=rv32im \
-	-mabi=ilp32
+	--target=riscv32-unknown-elf \
+	-march=rv32im \
+	-mabi=ilp32 \
+	-D__SYS_LITTLE_ENDIAN__
 
 
 COMMON_FLAGS = \

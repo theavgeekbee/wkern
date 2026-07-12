@@ -10,15 +10,15 @@ struct dt_node *dt_parse(void *fdt) {
         return NULL;
     }
 
-    uint32_t *p = (uint32_t *)(fdt + be32_to_cpu(hdr->off_dt_struct));
-    char *strings = fdt + be32_to_cpu(hdr->off_dt_strings);
+    uint32_t *p = (uint32_t *)(fdt + btohi(hdr->off_dt_struct));
+    char *strings = fdt + btohi(hdr->off_dt_strings);
 
     struct dt_node *root = NULL;
     struct dt_node *stack[DTB_MAX_NODES];
     int sp = 0;
 
     while (1) {
-        uint32_t token = be32_to_cpu(*p++);
+        uint32_t token = btohi(*p++);
         switch (token) {
             case FDT_BEGIN_NODE: {
                 char *name = (char *)p;
@@ -35,8 +35,8 @@ struct dt_node *dt_parse(void *fdt) {
                 break;
             }
             case FDT_PROP: {
-                uint32_t len = be32_to_cpu(*p++);
-                uint32_t nameoff = be32_to_cpu(*p++);
+                uint32_t len = btohi(*p++);
+                uint32_t nameoff = btohi(*p++);
                 void *value = p;
                 p += (len + 3) / 4;
 

@@ -20,7 +20,5 @@ void* kmalloc(size_t size);
 void* kzalloc(size_t size);
 void kfree(void* ptr);
 
-void* memcpy(void* to, const void* from, size_t size);
-
 void km_init(struct mem_info *info);
 

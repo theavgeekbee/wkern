@@ -106,18 +106,6 @@ void kfree(void *ptr) {
 }
 
 
-
-void* memcpy(void *to, const void *from, size_t size) {
-    char *dest = (char *)to;
-    const char *src = (const char *)from;
-
-    while (size--) {
-        *dest++ = *src++;
-    }
-
-    return dest;
-}
-
 void km_init(struct mem_info *info) {
     struct page *base = (struct page *)info->start;
     base->next = NULL;

@@ -19,8 +19,8 @@ struct mem_info *km_find_memory(struct dt_node *head) {
                 size_t len = 0;
                 uint32_t *reg = (uint32_t *)dt_get_prop(head, "reg", &len);
                 if (reg && len >= 8) {
-                    uint32_t base = be32_to_cpu(reg[0]);
-                    uint32_t size = be32_to_cpu(reg[1]);
+                    uint32_t base = btohi(reg[0]);
+                    uint32_t size = btohi(reg[1]);
                     struct mem_info *ret = kemalloc(sizeof(struct mem_info));
                     ret->start = (void*)base;
                     ret->size = (size_t)size;
