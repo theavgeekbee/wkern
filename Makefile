@@ -33,8 +33,8 @@ INCLUDE_FLAG = -Iinclude -Ikernel
 OPT_FLAG = -O2 -g3
 WARN_FLAG = -Wall -Wextra -Werror -Wundef
 
-KERNEL_LD_FLAG = -T linker.ld -fuse-ld=lld -Wl,-nostdlib -Wl,-melf32lriscv -Wl,--gc-sections -Wl,-Map=$(MAP_FILE)
-MODULE_LD_FLAG = -fuse-ld=lld -Wl,-nostdlib -Wl,-shared -Wl,-melf32lriscv -Wl,--gc-sections
+KERNEL_LD_FLAG = -T linker.ld -nostdlib -m elf32lriscv --gc-sections -Map=$(MAP_FILE)
+MODULE_LD_FLAG = -nostdlib -shared -m elf32lriscv --gc-sections
 
 KERNEL_OBJCOPY_FLAG = -O binary \
 		--strip-all \
@@ -91,6 +91,7 @@ MODULE_OBJ_DIRS = $(addprefix $(OBJ_DIR)/, $(MODULES))
 ALL_DIRS = $(OBJ_DIR)/kernel $(MODULE_OBJ_DIRS) $(BIN_DIR) $(MODULE_BIN_DIR)
 
 .PHONY: all clean kernel modules $(MODULES)
+.SILENT:
 all: kernel modules
 kernel: $(KERNEL_BIN)
 modules: $(ALL_MODULES)
@@ -106,7 +107,7 @@ $(OBJ_DIR)/kernel/%.o: $(KERNEL_DIR)/%.S | $(OBJ_DIR)/kernel
 
 $(KERNEL_ELF): $(KERNEL_OBJS) linker.ld | $(BIN_DIR)
 	@echo " LD $@"
-	$(CC) $(KERNEL_CFLAGS) $(KERNEL_LD_FLAG) $(KERNEL_OBJS) -o $@
+	$(LD) $(KERNEL_LD_FLAG) $(KERNEL_OBJS) -o $@
 
 $(KERNEL_BIN): $(KERNEL_ELF) | $(BIN_DIR)
 	@echo " OBJCOPY $@"
@@ -125,7 +126,8 @@ $(OBJ_DIR)/%.o: %.S# | $(OBJ_DIR)/%
 define module_link_rule
 $(MODULE_BIN_DIR)/$(1).ko: $$(MODULE_$(1)_OBJS) | $(MODULE_BIN_DIR)
 	@echo " LD $$@"
-	$$(CC) $$(MODULE_CFLAGS) $$(MODULE_LD_FLAG) $$^ -o $$@
+	$$(LD) $$(MODULE_LD_FLAG) $$^ -o $$@
+	@echo " OBJCOPY $$@"
 	$$(OBJCOPY) $$(MODULE_OBJCOPY_FLAG) $$@ $$@
 endef
 
@@ -135,4 +137,5 @@ $(ALL_DIRS):
 	mkdir -p $@
 
 clean:
+	@echo " CLEAN out/"
 	rm -rf out
