@@ -1,5 +1,6 @@
 #include <bump.h>
 #include <common.h>
+#include <log.h>
 
 static char eheap[EHEAP_SIZE] = {0};
 static size_t eheap_off = 0;
@@ -7,8 +8,12 @@ static size_t eheap_off = 0;
 struct mem_info *km_find_memory(struct dt_node *head) {
     struct dt_node *child = head->children;
     while (child) {
-        return km_find_memory(child);
-        child = child->next;
+        struct mem_info *location = km_find_memory(child);
+        if (location) {
+            return location;
+        } else {
+            child = child->next;
+        }
     }
 
     if (strlen(head->name) != 0) {
