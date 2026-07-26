@@ -4,7 +4,8 @@ ENTRY(_start)
 MEMORY
 {
     ROM   (rx)  : ORIGIN = 0x80000000, LENGTH = 1M
-    RAM   (rwx) : ORIGIN = 0x80400000, LENGTH = 1M
+    RAM   (rwx) : ORIGIN = 0x81000000, LENGTH = 1M
+    LOGRAM (rw) : ORIGIN = 0x82000000, LENGTH = 1M
 }
 
 SECTIONS
@@ -50,6 +51,14 @@ SECTIONS
         . += 8K;
         __stack_top = .;
     } > RAM
+
+    .ringbuf (NOLOAD) : ALIGN(64)
+    {
+        __ringbuf_start = .;
+        KEEP(*(.ringbuf))
+        . = ALIGN(64);
+        __ringbuf_end = .;
+    } > LOGRAM
 
     /DISCARD/ : {
         *(.eh_frame)
