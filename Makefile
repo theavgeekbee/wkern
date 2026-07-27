@@ -75,6 +75,7 @@ MODULE_$(1)_ASM_SRCS = $$(wildcard $(1)/*.S)
 MODULE_$(1)_C_OBJS = $$(addprefix $(OBJ_DIR)/$(1)/, $$(notdir $$(MODULE_$(1)_C_SRCS:.c=.o)))
 MODULE_$(1)_ASM_OBJS = $$(addprefix $(OBJ_DIR)/$(1)/, $$(notdir $$(MODULE_$(1)_ASM_SRCS:.S=.o)))
 MODULE_$(1)_OBJS = $$(MODULE_$(1)_C_OBJS) $$(MODULE_$(1)_ASM_OBJS)
+MODULE_$(1)_ELF = $(MODULE_BIN_DIR)/$(1).elf
 MODULE_$(1)_KO = $(MODULE_BIN_DIR)/$(1).ko
 endef
 
@@ -124,11 +125,12 @@ $(OBJ_DIR)/%.o: %.S# | $(OBJ_DIR)/%
 	$(CC) $(MODULE_CFLAGS) -c $< -o $@
 
 define module_link_rule
-$(MODULE_BIN_DIR)/$(1).ko: $$(MODULE_$(1)_OBJS) | $(MODULE_BIN_DIR)
+$(MODULE_BIN_DIR)/$(1).elf: $$(MODULE_$(1)_OBJS) | $(MODULE_BIN_DIR)
 	@echo " LD $$@"
 	$$(LD) $$(MODULE_LD_FLAG) $$^ -o $$@
+$(MODULE_BIN_DIR)/$(1).ko: $$(MODULE_$(1)_ELF) | $(MODULE_BIN_DIR)
 	@echo " OBJCOPY $$@"
-	$$(OBJCOPY) $$(MODULE_OBJCOPY_FLAG) $$@ $$@
+	$$(OBJCOPY) $$(MODULE_OBJCOPY_FLAG) $$^ $$@
 endef
 
 $(foreach module,$(MODULES),$(eval $(call module_link_rule,$(module))))
