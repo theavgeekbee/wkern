@@ -2,6 +2,7 @@
 
 #define NULL (void*)0
 
+#define uintptr_t __wk_size_t
 #define size_t __wk_size_t
 #define uint8_t __wk_uint8_t
 #define uint16_t __wk_uint16_t
