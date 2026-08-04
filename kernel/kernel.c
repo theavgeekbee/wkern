@@ -2,6 +2,7 @@
 #include <dtb.h>
 #include <bump.h>
 #include <log.h>
+#include <cpio.h>
 
 #define KERNEL_SIZE 3 * 1024 * 1024
 
@@ -24,7 +25,19 @@ void kernel_main(size_t hart, void *fdt) {
 
     km_init(info);
 
-    printk("kernel init was successful\n");
+    printk("memory blocks initialized\n");
+
+    size_t len = 0;
+    uint32_t *initrd = dt_get_prop(head, "initrd", &len);
+    if (!initrd || len < 8) {
+        printk("failed to find initrd!\n");
+        return;
+    }
+    uint32_t base = btohi(initrd[0]);
+    uint32_t size = btohi(initrd[1]);
+    
+    char *file = cpio_get_file((void*)base, (size_t)size, "/sbin/init");
+    (void)file;
 }
 
 void kernel_trap() {
