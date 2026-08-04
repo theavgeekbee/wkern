@@ -1,0 +1,4 @@
+kernel: kernel/*.c kernel/*.S
+kernel_target: kernel
+modules: console
+console: console/*.c

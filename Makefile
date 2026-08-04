@@ -33,7 +33,7 @@ INCLUDE_FLAG = -Iinclude -Ikernel
 OPT_FLAG = -O2 -g3
 WARN_FLAG = -Wall -Wextra -Werror -Wundef
 
-KERNEL_LD_FLAG = -T linker.ld -nostdlib -m elf32lriscv --gc-sections -Map=$(MAP_FILE)
+KERNEL_LD_FLAG = -T linker.ld -nostdlib -m elf32lriscv --gc-sections
 MODULE_LD_FLAG = -nostdlib -shared -m elf32lriscv --gc-sections
 
 KERNEL_OBJCOPY_FLAG = -O binary \
@@ -53,91 +53,73 @@ MODULE_OBJCOPY_FLAG = \
 KERNEL_CFLAGS = $(ARCH_FLAG) $(KERNEL_FLAG) $(SECTION_FLAG) $(INCLUDE_FLAG) $(OPT_FLAG) $(WARN_FLAG)
 MODULE_CFLAGS = $(ARCH_FLAG) $(MODULE_FLAG) $(SECTION_FLAG) $(INCLUDE_FLAG) $(OPT_FLAG) $(WARN_FLAG) -D__KERNEL_MODULE__
 
-INCLUDE_DIR = include
-KERNEL_DIR = kernel
-OBJ_DIR = out/objects
-BIN_DIR = out/bin
-MODULE_BIN_DIR = out/modules
-
-MODULES = $(filter-out kernel include out, $(shell find . -maxdepth 1 -type d -printf "%f\n" | grep -v "^\."))
-MODULE_OBJ_DIR = $(addprefix $(OBJ_DIR)/, $(MODULES))
-KERNEL_OBJ_DIR = $(OBJ_DIR)/kernel
-
-KERNEL_C_SRCS = $(wildcard kernel/*.c)
-KERNEL_ASM_SRCS = $(wildcard kernel/*.S)
-KERNEL_C_OBJS = $(addprefix $(OBJ_DIR)/kernel/, $(notdir $(KERNEL_C_SRCS:.c=.o)))
-KERNEL_ASM_OBJS = $(addprefix $(OBJ_DIR)/kernel/, $(notdir $(KERNEL_ASM_SRCS:.S=.o)))
-KERNEL_OBJS = $(KERNEL_C_OBJS) $(KERNEL_ASM_OBJS)
+MODULES = $(wildcard $(shell grep '^modules:' BuildConfig | sed 's/^modules://' | awk '{$$1=$$1; print}'))
+MODULE_OBJECTS = $(foreach m,$(MODULES),$m/$m.ko)
 
 define module_template
-MODULE_$(1)_C_SRCS = $$(wildcard $(1)/*.c)
-MODULE_$(1)_ASM_SRCS = $$(wildcard $(1)/*.S)
-MODULE_$(1)_C_OBJS = $$(addprefix $(OBJ_DIR)/$(1)/, $$(notdir $$(MODULE_$(1)_C_SRCS:.c=.o)))
-MODULE_$(1)_ASM_OBJS = $$(addprefix $(OBJ_DIR)/$(1)/, $$(notdir $$(MODULE_$(1)_ASM_SRCS:.S=.o)))
-MODULE_$(1)_OBJS = $$(MODULE_$(1)_C_OBJS) $$(MODULE_$(1)_ASM_OBJS)
-MODULE_$(1)_ELF = $(MODULE_BIN_DIR)/$(1).elf
-MODULE_$(1)_KO = $(MODULE_BIN_DIR)/$(1).ko
-endef
+$(1)_SRCS = $$(wildcard $$(shell grep '^$(1):' BuildConfig | sed 's/^$(1)://' | awk '{$$$$1=$$$$1; print}'))
+$(1)_ELF = $(1)/$(1).elf
+$(1)_BIN = $(1)/$(1).ko
 
+$(1)_C_SRCS = $$(filter %.c,$$($(1)_SRCS))
+$(1)_S_SRCS = $$(filter %.S,$$($(1)_SRCS))
+$(1)_C_OBJS = $$($(1)_C_SRCS:.c=.o)
+$(1)_S_OBJS = $$($(1)_S_SRCS:.S=.o)
+$(1)_OBJS = $$($(1)_C_OBJS) $$($(1)_S_OBJS)
+
+$$($(1)_C_OBJS): %.o: %.c
+	@echo " CC [MOD] $$<"
+	$$(CC) $$(MODULE_CFLAGS) -c $$< -o $$@
+
+$$($(1)_S_OBJS): %.o: %.S
+	@echo " AS [MOD] $$<"
+	$$(CC) $$(MODULE_CFLAGS) -c $$< -o $$@
+
+$$($(1)_ELF): $$($(1)_OBJS)
+	@echo " LD [MOD] $$@"
+	$$(LD) $$(MODULE_LD_FLAG) $$^ -o $$@
+$$($(1)_BIN): $$($(1)_ELF)
+	@echo " OBJCOPY [MOD] $$@"
+	$$(OBJCOPY) $$(MODULE_OBJCOPY_FLAG) $$^ $$@
+endef
 $(foreach module,$(MODULES),$(eval $(call module_template,$(module))))
 
-ALL_MODULES = $(foreach module,$(MODULES),$(MODULE_BIN_DIR)/$(module).ko)
+KERNEL_SRCS = $(wildcard $(shell grep '^kernel:' BuildConfig | sed 's/^kernel://' | awk '{$$1=$$1; print}'))
+KERNEL_OBJS = $(KERNEL_SRCS:.c=.o)
+KERNEL_OBJS := $(KERNEL_OBJS:.S=.o)
+KERNEL_BIN = kernel/kernel.bin
+KERNEL_ELF = kernel/kernel.elf
 
-KERNEL_ELF = $(BIN_DIR)/wkern.elf
-KERNEL_BIN = $(BIN_DIR)/wkern.bin
-MAP_FILE = $(BIN_DIR)/kernel.map
-ALL_MOODULES = $(foreach module,$(MODULES),$(MODULE_BIN_DIR)/$(module).ko)
+GENERATED = \
+	$(KERNEL_OBJS) \
+	$(KERNEL_ELF) \
+	$(KERNEL_BIN) \
+	$(foreach m,$(MODULES),$(m)/$(m).elf) \
+	$(foreach m,$(MODULES),$(m)/$(m).ko) \
+	$(foreach m,$(MODULES),$($(m)_OBJS))
 
-MODULE_OBJ_DIRS = $(addprefix $(OBJ_DIR)/, $(MODULES))
-ALL_DIRS = $(OBJ_DIR)/kernel $(MODULE_OBJ_DIRS) $(BIN_DIR) $(MODULE_BIN_DIR)
-
-.PHONY: all clean kernel modules $(MODULES)
+.PHONY: all kernel clean modules $(MODULES)
 .SILENT:
 all: kernel modules
 kernel: $(KERNEL_BIN)
-modules: $(ALL_MODULES)
-$(MODULES): %: $(MODULE_BIN_DIR)/%.ko
+modules: $(MODULES)
+$(MODULES): $(MODULE_OBJECTS)
 
-$(OBJ_DIR)/kernel/%.o: $(KERNEL_DIR)/%.c | $(OBJ_DIR)/kernel
+%.o: %.c
 	@echo " CC $<"
 	$(CC) $(KERNEL_CFLAGS) -c $< -o $@
-
-$(OBJ_DIR)/kernel/%.o: $(KERNEL_DIR)/%.S | $(OBJ_DIR)/kernel
+%.o: %.S
 	@echo " AS $<"
 	$(CC) $(KERNEL_CFLAGS) -c $< -o $@
 
-$(KERNEL_ELF): $(KERNEL_OBJS) linker.ld | $(BIN_DIR)
+$(KERNEL_ELF): $(KERNEL_OBJS) linker.ld | $(KERNEL_OUTDIR)/
 	@echo " LD $@"
 	$(LD) $(KERNEL_LD_FLAG) $(KERNEL_OBJS) -o $@
 
-$(KERNEL_BIN): $(KERNEL_ELF) | $(BIN_DIR)
+$(KERNEL_BIN): $(KERNEL_ELF) | $(KERNEL_OUTDIR)/
 	@echo " OBJCOPY $@"
 	$(OBJCOPY) $(KERNEL_OBJCOPY_FLAG) $(KERNEL_ELF) $(KERNEL_BIN)
 
-$(OBJ_DIR)/%.o: %.c# | $(OBJ_DIR)/%
-	@mkdir -p $(dir $@)
-	@echo " CC $@"
-	$(CC) $(MODULE_CFLAGS) -c $< -o $@
-
-$(OBJ_DIR)/%.o: %.S# | $(OBJ_DIR)/%
-	@mkdir -p $(dir $@)
-	@echo " AS $@"
-	$(CC) $(MODULE_CFLAGS) -c $< -o $@
-
-define module_link_rule
-$(MODULE_BIN_DIR)/$(1).elf: $$(MODULE_$(1)_OBJS) | $(MODULE_BIN_DIR)
-	@echo " LD $$@"
-	$$(LD) $$(MODULE_LD_FLAG) $$^ -o $$@
-$(MODULE_BIN_DIR)/$(1).ko: $$(MODULE_$(1)_ELF) | $(MODULE_BIN_DIR)
-	@echo " OBJCOPY $$@"
-	$$(OBJCOPY) $$(MODULE_OBJCOPY_FLAG) $$^ $$@
-endef
-
-$(foreach module,$(MODULES),$(eval $(call module_link_rule,$(module))))
-
-$(ALL_DIRS):
-	mkdir -p $@
-
 clean:
-	@echo " CLEAN out/"
-	rm -rf out
+	@echo " CLEAN"
+	$(RM) $(GENERATED)
