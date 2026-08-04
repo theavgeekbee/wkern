@@ -6,3 +6,5 @@ typedef void (*console_callback_t)(char);
 
 void vprintk(const char *message, __builtin_va_list args);
 void printk(const char *message, ...);
+
+void register_console_callback(console_callback_t callback);

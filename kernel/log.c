@@ -103,3 +103,7 @@ void printk(const char *fmt, ...) {
     vprintk(fmt, args);
     __builtin_va_end(args);
 }
+
+void register_console_callback(console_callback_t cb) {
+    callback = cb;
+}

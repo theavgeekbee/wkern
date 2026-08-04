@@ -5,8 +5,6 @@
 #define __KERNEL_MODULE__
 #endif
 
-extern console_callback_t callback;
-
 struct console_device_meta {
     void *register_controller;
     void *data_start;
@@ -29,7 +27,7 @@ __attribute__((visibility("hidden"))) void console_put_char(char c) {
 
 
 int __attribute__((section(".module_init"))) module_init(struct mmio_device_meta *meta) {
-    callback = console_put_char;
+    register_console_callback(console_put_char);
 
     dev_meta.register_controller = meta->start;
     dev_meta.data_start = (void *)((uint8_t *)meta->start + 1);
