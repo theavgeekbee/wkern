@@ -1,5 +1,5 @@
-#include <log.h>
-#include <types.h>
+#include <sys/log.h>
+
 __attribute__((section(".ringbuf"), aligned(64)))
 volatile char log_ring[RINGBUF_SIZE];
 static int pos = 0;

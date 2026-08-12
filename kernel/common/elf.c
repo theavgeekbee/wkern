@@ -1,5 +1,4 @@
-#include <elf.h>
-#include <common.h>
+#include <sys/elf.h>
 
 int elf_chk_header(struct elf_header *header) {
     uint32_t magic_chk;

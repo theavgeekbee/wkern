@@ -1,6 +1,6 @@
-#include <bump.h>
-#include <common.h>
-#include <log.h>
+#include <early/bump.h>
+#include <sys/log.h>
+#include <sys/mem.h>
 
 static char eheap[EHEAP_SIZE] = {0};
 static size_t eheap_off = 0;

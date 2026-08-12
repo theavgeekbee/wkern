@@ -1,5 +1,5 @@
 #pragma once
-#include <types.h>
+#include <sys/stddef.h>
 
 struct mem_info {
     void* start;
@@ -14,6 +14,12 @@ struct page {
     struct page* next;
     size_t size;
     enum PageStatus status;
+};
+
+struct mmio_device_meta {
+    const char *name;
+    void *start;
+    size_t size;
 };
 
 void* kmalloc(size_t size);

@@ -1,4 +1,4 @@
-kernel: kernel/*.c kernel/*.S
-kernel_target: kernel
+kernel: kernel/riscv/*.c kernel/riscv/*.S kernel/common/*.c
+kernel_target: kernel/riscv
 modules: console
 console: console/*.c

@@ -1,7 +1,5 @@
-
-#include <dtb.h>
-#include <bump.h>
-#include <common.h>
+#include <early/dtb.h>
+#include <early/bump.h>
 
 struct dt_node *dt_parse(void *fdt) {
     struct fdt_header *hdr = fdt;

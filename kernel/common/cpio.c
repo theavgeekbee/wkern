@@ -1,7 +1,5 @@
-#include <cpio.h>
-#include <types.h>
-#include <common.h>
-#include <log.h>
+#include <sys/cpio.h>
+#include <sys/log.h>
 
 static uint32_t parse_hex(const char *p)
 {

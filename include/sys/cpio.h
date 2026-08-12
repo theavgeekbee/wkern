@@ -1,5 +1,5 @@
 #pragma once
-#include <types.h>
+#include <sys/stddef.h>
 #define CPIO_HEADER_LEN 110
 
 struct cpio_newc_hdr {

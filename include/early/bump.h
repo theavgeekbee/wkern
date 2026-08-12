@@ -1,7 +1,6 @@
 #pragma once
-#include <types.h>
-#include <dtb.h>
-#include <mem.h>
+#include <sys/stddef.h>
+#include <early/dtb.h>
 #define EHEAP_SIZE (512 * 1024)
 
 

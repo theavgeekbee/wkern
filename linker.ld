@@ -71,4 +71,5 @@ SECTIONS
         *(.llvm_*)
         *(.rela.*)
     }
+    _end = .;
 }

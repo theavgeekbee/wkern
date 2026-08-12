@@ -1,5 +1,5 @@
 #pragma once
-#include <types.h>
+#include <sys/stddef.h>
 
 #define FDT_MAGIC 0xEDFE0DD0
 #define FDT_BEGIN_NODE 1

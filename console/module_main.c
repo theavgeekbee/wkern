@@ -1,5 +1,5 @@
-#include <log.h>
-#include <mmio.h>
+#include <sys/log.h>
+#include <sys/mem.h>
 
 #ifndef __KERNEL_MODULE__
 #define __KERNEL_MODULE__

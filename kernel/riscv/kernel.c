@@ -1,8 +1,7 @@
-#include <types.h>
-#include <dtb.h>
-#include <bump.h>
-#include <log.h>
-#include <cpio.h>
+#include <sys/log.h>
+#include <sys/mem.h>
+#include <sys/cpio.h>
+#include <early/bump.h>
 
 #define KERNEL_SIZE 3 * 1024 * 1024
 

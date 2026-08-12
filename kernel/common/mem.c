@@ -1,7 +1,5 @@
-#include <types.h>
-#include <mem.h>
-#include <dtb.h>
-#include <common.h>
+#include <sys/mem.h>
+#include <early/dtb.h>
 
 static struct page *free_list;
 
