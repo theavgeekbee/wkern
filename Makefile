@@ -33,7 +33,7 @@ INCLUDE_FLAG = -Iinclude -Ikernel
 OPT_FLAG = -O2 -g3
 WARN_FLAG = -Wall -Wextra -Werror -Wundef
 
-KERNEL_LD_FLAG = -T linker.ld -nostdlib -m elf32lriscv --gc-sections
+KERNEL_LD_FLAG = -T $(KERNEL_LD) -nostdlib -m elf32lriscv --gc-sections
 MODULE_LD_FLAG = -nostdlib -shared -m elf32lriscv --gc-sections
 
 KERNEL_OBJCOPY_FLAG = -O binary \
@@ -85,6 +85,7 @@ endef
 $(foreach module,$(MODULES),$(eval $(call module_template,$(module))))
 
 KERNEL_SRCS = $(wildcard $(shell grep '^kernel:' BuildConfig | sed 's/^kernel://' | awk '{$$1=$$1; print}'))
+KERNEL_LD := $(shell grep '^linker_script:' BuildConfig | sed 's/^linker_script://' | awk '{$$1=$$1; print}')
 KERNEL_OBJS = $(KERNEL_SRCS:.c=.o)
 KERNEL_OBJS := $(KERNEL_OBJS:.S=.o)
 KERNEL_BIN = kernel/kernel.bin
@@ -112,7 +113,7 @@ $(MODULES): $(MODULE_OBJECTS)
 	@echo " AS $<"
 	$(CC) $(KERNEL_CFLAGS) -c $< -o $@
 
-$(KERNEL_ELF): $(KERNEL_OBJS) linker.ld | $(KERNEL_OUTDIR)/
+$(KERNEL_ELF): $(KERNEL_OBJS) $(KERNEL_LD) | $(KERNEL_OUTDIR)/
 	@echo " LD $@"
 	$(LD) $(KERNEL_LD_FLAG) $(KERNEL_OBJS) -o $@
 
@@ -121,5 +122,5 @@ $(KERNEL_BIN): $(KERNEL_ELF) | $(KERNEL_OUTDIR)/
 	$(OBJCOPY) $(KERNEL_OBJCOPY_FLAG) $(KERNEL_ELF) $(KERNEL_BIN)
 
 clean:
-	@echo " CLEAN"
+	@echo " CLEAN $(GENERATED)"
 	$(RM) $(GENERATED)

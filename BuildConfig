@@ -1,4 +1,5 @@
 kernel: kernel/riscv/*.c kernel/riscv/*.S kernel/common/*.c
+linker_script: kernel/riscv/linker.ld
 kernel_target: kernel/riscv
 modules: console
 console: console/*.c
