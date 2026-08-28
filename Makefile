@@ -86,10 +86,11 @@ $(foreach module,$(MODULES),$(eval $(call module_template,$(module))))
 
 KERNEL_SRCS = $(wildcard $(shell grep '^kernel:' BuildConfig | sed 's/^kernel://' | awk '{$$1=$$1; print}'))
 KERNEL_LD := $(shell grep '^linker_script:' BuildConfig | sed 's/^linker_script://' | awk '{$$1=$$1; print}')
+KERNEL_TARGET := $(shell grep '^kernel_target:' BuildConfig | sed 's/^kernel_target://' | awk '{$$1=$$1; print}')
 KERNEL_OBJS = $(KERNEL_SRCS:.c=.o)
 KERNEL_OBJS := $(KERNEL_OBJS:.S=.o)
-KERNEL_BIN = kernel/kernel.bin
-KERNEL_ELF = kernel/kernel.elf
+KERNEL_BIN := $(KERNEL_TARGET)/kernel.bin
+KERNEL_ELF := $(KERNEL_TARGET)/kernel.elf
 
 GENERATED = \
 	$(KERNEL_OBJS) \
