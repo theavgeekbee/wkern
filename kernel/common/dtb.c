@@ -1,5 +1,5 @@
 #include <early/dtb.h>
-#include <early/bump.h>
+#include <sys/mem.h>
 
 struct dt_node *dt_parse(void *fdt) {
     struct fdt_header *hdr = fdt;
@@ -50,6 +50,28 @@ struct dt_node *dt_parse(void *fdt) {
                 return root;
         }
     }
+}
+
+struct dt_node *dt_find_device(struct dt_node *head, const char *name) {
+    struct dt_node *child = head->children;
+    while (child) {
+        struct dt_node *result = dt_find_device(child, name);
+        if (result) {
+            return result;
+        } else {
+            child = child->next;
+        }
+    }
+
+    struct dt_prop *props = head->props;
+    while (props) {
+        if (strcmp(props->name, "device_type") == 0 &&
+            strcmp(props->value, name) == 0) {
+            return head;
+        }
+    }
+
+    return NULL;
 }
 
 void *dt_get_prop(struct dt_node *node, char *name, size_t *len)  {

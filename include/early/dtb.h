@@ -38,6 +38,7 @@ struct fdt_header {
 };
 
 struct dt_node *dt_parse(void *fdt);
+struct dt_node *dt_find_device(struct dt_node *head, const char *name);
 void *dt_get_prop(struct dt_node *node, char *name, size_t *len);
 uint32_t dt_read_u32(struct dt_node *node, char *name, uint32_t *out);
 

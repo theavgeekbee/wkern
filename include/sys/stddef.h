@@ -1,7 +1,7 @@
 #pragma once
 #define NULL (void*)0
 
-#define uintptr_t __wk_size_t
+#define uintptr_t __wk_uintptr_t
 #define size_t __wk_size_t
 #define uint8_t __wk_uint8_t
 #define uint16_t __wk_uint16_t
@@ -32,7 +32,8 @@
     #define htobi(x) x
 #endif
 
-typedef __UINTPTR_TYPE__ __wk_size_t;
+typedef __UINTPTR_TYPE__ __wk_uintptr_t;
+typedef __SIZE_TYPE__ __wk_size_t;
 typedef __UINT8_TYPE__ __wk_uint8_t;
 typedef __UINT16_TYPE__ __wk_uint16_t;
 typedef __UINT32_TYPE__ __wk_uint32_t;

@@ -1,7 +1,11 @@
 #include <sys/mem.h>
 #include <early/dtb.h>
+#define EHEAP_SIZE (512 * 1024)
 
 static struct page *free_list;
+
+static char eheap[EHEAP_SIZE] = {0};
+static size_t eheap_off = 0;
 
 static void merge_freelist() {
     struct page *list = free_list;
@@ -15,6 +19,20 @@ static void merge_freelist() {
         list = list->next;
     }
 }
+
+
+void* kemalloc(size_t size) {
+    size = (size + 7) & ~7;
+
+    if (eheap_off + size > EHEAP_SIZE) {
+        return NULL;
+    }
+
+    void *ptr = &eheap[eheap_off];
+    eheap_off += size;
+    return ptr;
+}
+
 
 void* kmalloc(size_t size) {
     struct page *page = free_list;

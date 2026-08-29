@@ -1,10 +1,15 @@
+VERSION = 0.1.0-alpha
+
 CC = clang
 LD = ld.lld
 OBJCOPY = llvm-objcopy
 
+COMPILER = $(shell $(CC) --version | head -n 1)
+LINKER = $(shell $(LD) --version | head -n 1)
+
 ARCH_FLAG = \
 	--target=riscv32-unknown-elf \
-	-march=rv32im \
+	-march=rv32g \
 	-mabi=ilp32 \
 	-D__SYS_LITTLE_ENDIAN__
 
@@ -20,6 +25,9 @@ COMMON_FLAGS = \
 	-nostdlib \
 	-nostdinc \
 	-nodefaultlibs \
+	-DVERSION='"$(VERSION)"' \
+	-DCOMPILER_NAME='"$(COMPILER)"' \
+	-DLINKER_NAME='"$(LINKER)"' \
 
 KERNEL_FLAG = $(COMMON_FLAGS) -static
 MODULE_FLAG = $(COMMON_FLAGS) -fPIC -fpie
@@ -101,7 +109,7 @@ GENERATED = \
 	$(foreach m,$(MODULES),$($(m)_OBJS))
 
 .PHONY: all kernel clean modules $(MODULES)
-.SILENT:
+$(V).SILENT:
 all: kernel modules
 kernel: $(KERNEL_BIN)
 modules: $(MODULES)

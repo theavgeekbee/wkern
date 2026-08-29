@@ -23,6 +23,7 @@ struct mmio_device_meta {
 };
 
 void* kmalloc(size_t size);
+void* kemalloc(size_t size);
 void* kzalloc(size_t size);
 void kfree(void* ptr);
 
