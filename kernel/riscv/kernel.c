@@ -30,13 +30,13 @@ struct kernel_info *discover_arch(void *fdt) {
 
     struct dt_node *memory = dt_find_device(head, "memory");
     if (memory == NULL) {
-        printk("[E;F] Failed to fidn the memory device!");
+        printk("[E;F] Failed to find the memory device!");
         return NULL;
     }
 
     size_t len = 0;
 
-    uint8_t *memory_reg = dt_get_prop(head, "reg", &len);
+    uint8_t *memory_reg = dt_get_prop(memory, "reg", &len);
 
     if (!memory_reg || len < sizeof(uintptr_t) + sizeof(size_t)) {
         printk("[E;F] reg property for memory in provided device tree is nonexistent or invalid!");
@@ -67,7 +67,7 @@ struct kernel_info *discover_arch(void *fdt) {
 }
 
 void kernel_main(size_t hart, void *fdt) {
-    printk("wkern version %s (Compiler %s, Linker %s)%s\n", VERSION, COMPILER_NAME, LINKER_NAME);
+    printk("wkern version %s (Compiler %s, Linker %s)\n", VERSION, COMPILER_NAME, LINKER_NAME);
     if (hart != 0)
         return;
 
