@@ -1,23 +1,123 @@
 #include <sys/mem.h>
+#include <sys/stddef.h>
 #include <early/dtb.h>
-#define EHEAP_SIZE (512 * 1024)
-
-static struct page *free_list;
 
 static char eheap[EHEAP_SIZE] = {0};
 static size_t eheap_off = 0;
 
-static void merge_freelist() {
-    struct page *list = free_list;
+static struct free_list *page_list = NULL;
+static struct free_list *buddy_head = NULL;
+static void *buddy_start;
+static uint16_t buddy_bitmap = 0;
 
-    while (list && list->next) {
-        if ((void*)list + list->size == list->next) {
-            list->size += list->next->size;
-            list->next = list->next->next;
-            continue;
-        }
-        list = list->next;
+static inline size_t round_pow2(size_t n) {
+    if (n == 0) return 1;
+    
+    n--;
+    n |= n >> 1;
+    n |= n >> 2;
+    n |= n >> 4;
+    n |= n >> 8;
+    n |= n >> 16;
+
+    if (sizeof(size_t) >= 8) {
+        n |= n >> 32;
     }
+
+    n++;
+    
+    return n;
+}
+
+static inline int cnt_zeros_below(uint16_t mask, int bit) {
+    uint16_t lower = mask & ((1 << bit) - 1);
+    return lower == 0 ? bit : bit - 1 - (7 - __builtin_clz(lower));
+}
+
+static void merge_free_list(struct free_list *head) {
+    while (head && head->next) {
+        if ((uintptr_t)head + head->size == (uintptr_t)head->next) {
+            head->next = head->next->next;
+            head->next->prev = head;
+            head->next->size = (uintptr_t)head->next - (uintptr_t)head;
+        } else {
+            head = head->next;
+        }
+    }
+}
+
+
+static void *buddy_alloc(size_t size) {
+    if (!buddy_head) {
+        struct free_list *free_page = page_list;
+        page_list->next->prev = NULL;
+
+        free_page->next = NULL;
+        free_page->prev = NULL;
+
+        buddy_head = free_page;
+        buddy_start = free_page;
+    }
+    size = round_pow2(size);
+    
+    if (size < 256)
+        size = 256;
+
+    struct free_list *first = buddy_head;
+    while (first && first->size > size) {
+        size_t new_size = first->size / 2;
+        struct free_list *next = (struct free_list *)((uintptr_t)first + new_size);
+
+        next->next = first->next;
+        next->prev = first;
+        next->size = new_size;
+
+        first->next = next;
+        first->size = new_size;
+    }
+
+    buddy_bitmap |= (1 << (((uintptr_t)first - (uintptr_t)buddy_start)/256));
+
+    if (!first->prev && !first->next) {
+        buddy_head = NULL;
+        return first;
+    }
+
+    if (!first->prev) {
+        first->next->prev = NULL;
+        return first;
+    }
+
+    first->prev->next = first->next;
+    first->next->prev = first->prev;
+
+    return first;
+}
+
+static void buddy_free(void *ptr) {
+    struct free_list *head = buddy_head;
+    while (head && (uintptr_t)head < (uintptr_t)ptr) {
+        if (head->next == NULL) {
+            struct free_list *ins_page = ptr;
+            head->next = ins_page;
+            ins_page->prev = head;
+            ins_page->size = cnt_zeros_below(buddy_bitmap, ((uintptr_t)ptr - (uintptr_t)buddy_head)/256);
+            goto merge;
+        }
+        head = head->next;
+    }
+
+    
+    struct free_list *ins_page = ptr;
+    ins_page->next = head->next;
+    ins_page->prev = head;
+    ins_page->size = (uintptr_t)ins_page->next - (uintptr_t)ins_page;
+
+    head->next = ins_page;
+    ins_page->next->prev = ins_page;
+
+merge:
+    merge_free_list(buddy_head);
 }
 
 
@@ -34,51 +134,15 @@ void* kemalloc(size_t size) {
 }
 
 
-void* kmalloc(size_t size) {
-    struct page *page = free_list;
-    struct page *last = NULL;
-
-    size_t combined_size = size + sizeof(struct page);
-
-    while (page && page->size < combined_size) {
-        last = page;
-        page = page->next;
+void* kmalloc(size_t size, enum AllocationType type) {
+    if (type == MEMPAGE_FREEPAGE) {
+        buddy_alloc(size);
     }
-
-    if (page == NULL)
-        return NULL;
-
-
-    if (page->size - combined_size < sizeof(struct page)) {
-        // Return the entire page
-        if (last)
-            last->next = page->next;
-        else
-            free_list = page->next;
-
-    } else {
-        // break page and create a new one
-        struct page *broken = (void *)page + combined_size;
-        broken->size = page->size - combined_size;
-        broken->next = page->next;
-        broken->status = MEMPAGE_FREE;
-
-        page->size = combined_size;
-        page->next = broken;
-
-        if (last)
-            last->next = broken;
-        else
-            free_list = broken;
-    } 
-
-    page->status = MEMPAGE_USED;
-
-    return (void *)page + sizeof(struct page);
+    return NULL;
 }
 
-void* kzalloc(size_t size) {
-    char *ptr = kmalloc(size);
+void* kzalloc(size_t size, enum AllocationType type) {
+    char *ptr = kmalloc(size, type);
 
     if (!ptr)
         return NULL;
@@ -91,44 +155,11 @@ void* kzalloc(size_t size) {
 }
 
 void kfree(void *ptr) {
-    if (!ptr)
-        return;
-
-    struct page *page_info = (struct page *)(ptr - sizeof(struct page));
-    struct page *iter = free_list;
-
-    page_info->status = MEMPAGE_FREE;
-
-    if (!iter) {
-        free_list = page_info;
-        page_info->next = NULL;
-        goto merge;
+    if ((uintptr_t)ptr >= (uintptr_t)buddy_start &&
+        (uintptr_t)ptr < (uintptr_t)buddy_start + PAGE_SIZE) {
+        buddy_free(ptr);
     }
-    if (page_info < free_list) {
-        page_info->next = iter;
-        free_list = page_info;
-        goto merge;
-    }
-
-    while (iter->next && iter->next < page_info) {
-        iter = iter->next;
-    }
-
-    page_info->next = iter->next;
-    iter->next = page_info;
-
-    merge:
-    merge_freelist();
-}
-
-
-void km_init(struct mem_info *info) {
-    struct page *base = (struct page *)info->start;
-    base->next = NULL;
-    base->size = info->size - sizeof(struct page);
-    base->status = MEMPAGE_FREE;
-
-    free_list = base;
+    (void)ptr;
 }
 
 
