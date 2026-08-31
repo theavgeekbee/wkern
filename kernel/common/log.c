@@ -1,3 +1,4 @@
+#include <sys/stddef.h>
 #include <sys/log.h>
 
 __attribute__((section(".ringbuf"), aligned(64)))
@@ -30,6 +31,29 @@ void put_uint(unsigned int value, unsigned int radix) {
         tmp[i++] = digits[value % radix];
         value /= radix;
     }
+
+    while (i--)
+        put_char(tmp[i]);
+}
+
+
+void put_ptr(uintptr_t value) {
+    char tmp[16];
+    const char digits[] = "0123456789abcdef";
+    int i = 0;
+
+    if (value == 0) {
+        put_char('0');
+        return;
+    }
+
+    while (value) {
+        tmp[i++] = digits[value % 16];
+        value /= 16;
+    }
+
+    put_char('0');
+    put_char('x');
 
     while (i--)
         put_char(tmp[i]);
@@ -77,6 +101,10 @@ void vprintk(const char *fmt, __builtin_va_list args) {
 
         case 'x':
             put_uint(__builtin_va_arg(args, unsigned int), 16);
+            break;
+
+        case 'p':
+            put_ptr(__builtin_va_arg(args, uintptr_t));
             break;
 
         default:

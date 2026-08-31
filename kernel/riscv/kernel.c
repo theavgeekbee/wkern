@@ -49,6 +49,8 @@ struct kernel_info *discover_arch(void *fdt) {
     kernel_info->mem_start = (void *)base;
     kernel_info->mem_size = size;
 
+    printk("[I] DTB provided memory block addr %p size %p\n", base, (uintptr_t)size);
+
     
     uint8_t *initrd_reg = dt_get_prop(head, "initrd", &len);
     if (!initrd_reg || len < sizeof(uintptr_t) + sizeof(size_t)) {
@@ -62,6 +64,7 @@ struct kernel_info *discover_arch(void *fdt) {
     kernel_info->initrd_start = (void *)base;
     kernel_info->initrd_size = size;
 
+    printk("[I] DTB provided init ramdisk addr %p size %p\n", base, (uintptr_t)size);
 
     return kernel_info;
 }
